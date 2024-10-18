@@ -1,86 +1,193 @@
-from PyPDF2 import PdfReader
-import docx
+import os
 import pdfplumber
+import docx
+from pptx import Presentation
 from PIL import Image
 import io
-from pptx.presentation import Presentation  # Correct import for Presentation
-
-class DataExtractor:
+from abc import ABC, abstractmethod
+ 
+ 
+# Base DataExtractor class
+class DataExtractor(ABC):
     def __init__(self, file_loader):
         self.file_loader = file_loader
         self.content = file_loader.load_file()
-
+ 
+    def get_file_name(self):
+        """Return the base name of the file being processed."""
+        return os.path.basename(self.file_loader.file_path)
+ 
+    def save_image(self, img_data, index, file_ext, page_number=None):
+        """Save the image data and return its path."""
+        img_filename = f"{self.get_file_name().replace(file_ext, '')}_img_{index}.png"
+        if page_number is not None:
+            img_filename = f"{self.get_file_name().replace(file_ext, '')}_page_{page_number + 1}_img_{index}.png"
+        img_path = os.path.join('output', img_filename)
+        image = Image.open(io.BytesIO(img_data))
+        image.save(img_path)
+        return img_path
+ 
+    @abstractmethod
     def extract_text(self):
-        """Extract text and metadata from the loaded file."""
-        print("Extracting text from file...")
-
-        if isinstance(self.content, PdfReader):
-            # PDF Text Extraction Logic
-            text_data = ''
-            metadata = []
-            for page_num, page in enumerate(self.content.pages):
-                text_data += page.extract_text() or ''
-                metadata.append({"page": page_num + 1, "content_length": len(text_data)})
-            print("Text extracted from PDF.")
-            return {"text": text_data, "metadata": metadata}
-
-        elif isinstance(self.content, docx.document.Document):
-            # DOCX Text Extraction Logic
-            print("Extracting text from DOCX...")
-            text_data = ''
-            metadata = []
-            for paragraph in self.content.paragraphs:
-                text_data += paragraph.text + '\n'
-                metadata.append({"style": paragraph.style.name, "content_length": len(paragraph.text)})
-            print("Text extracted from DOCX.")
-            return {"text": text_data, "metadata": metadata}
-
-        elif isinstance(self.content, Presentation):
-            # PPT Text Extraction Logic
-            print("Extracting text from PPT...")
-            text_data = ''
-            metadata = []
-            for slide_num, slide in enumerate(self.content.slides):
-                slide_text = ""
-                for shape in slide.shapes:
-                    if hasattr(shape, "text"):
-                        slide_text += shape.text + '\n'
-                text_data += slide_text
-                metadata.append({"slide": slide_num + 1, "content_length": len(slide_text)})
-            print("Text extracted from PPT.")
-            return {"text": text_data, "metadata": metadata}
-
-        else:
-            raise ValueError("Unsupported file format for text extraction.")
+        pass
+ 
+    @abstractmethod
     def extract_tables(self):
-        """Extract tables from the loaded file."""
-        if isinstance(self.content, PdfReader):
-            tables = []
-            with pdfplumber.open(self.file_loader.file_path) as pdf:
-                for page in pdf.pages:
-                    tables.extend(page.extract_tables())
-            return tables
-        else:
-            print("Table extraction is only supported for PDFs at the moment.")
-            return []
-    
+        pass
+ 
+    @abstractmethod
     def extract_images(self):
-        """Extract images from the loaded PDF."""
+        pass
+ 
+    @abstractmethod
+    def extract_metadata(self):
+        pass
+ 
+    @abstractmethod
+    def extract_links(self):
+        pass
+ 
+ 
+# PDFDataExtractor class
+class PDFDataExtractor(DataExtractor):
+    def __init__(self, loader):
+        super().__init__(loader)
+        self.pdf = None
+        self.load_pdf()
+ 
+    def load_pdf(self):
+        self.pdf = pdfplumber.open(self.file_loader.file_path)
+ 
+    def extract_text(self):
+        text = ""
+        if self.pdf:
+            for page in self.pdf.pages:
+                page_text = page.extract_text()
+                if page_text:
+                    text += page_text + "\n"
+        return text.strip()
+ 
+    def extract_tables(self):
+        tables = []
+        if self.pdf:
+            for page in self.pdf.pages:
+                tables.extend(page.extract_tables())
+        return tables
+ 
+    def extract_images(self):
         images = []
-        
-        if isinstance(self.content, PdfReader):
-            with pdfplumber.open(self.file_loader.file_path) as pdf:
-                for page_num, page in enumerate(pdf.pages):
-                    # Iterate over images found on the page
-                    for img_index, img in enumerate(page.images):
-                        # img is a dictionary with image attributes; 'stream' contains image bytes
-                        img_data = page.images[img_index]
-                        img_bytes = img_data["stream"].get_data()
-                        
-                        # Convert bytes to an image
-                        image = Image.open(io.BytesIO(img_bytes))
-                        image_path = f"output/page_{page_num+1}_image_{img_index+1}.png"
-                        image.save(image_path)
-                        images.append(image_path)
-        
+        if self.pdf:
+            for page_number, page in enumerate(self.pdf.pages):
+                for img_index, img in enumerate(page.images):
+                    if 'stream' in img:
+                        img_data = img['stream'].get_rawdata()
+                        img_path = self.save_image(img_data, img_index + 1, '.pdf', page_number)
+                        images.append(img_path)
         return images
+ 
+    def extract_metadata(self):
+        return self.pdf.metadata if self.pdf else {}
+ 
+    def extract_links(self):
+        links = []
+        if self.pdf:
+            for page in self.pdf.pages:
+                if hasattr(page, 'annots') and page.annots:
+                    for annot in page.annots:
+                        uri = annot.get("uri")
+                        if uri:
+                            links.append(uri)
+        return links
+ 
+    def close_pdf(self):
+        if self.pdf:
+            self.pdf.close()
+ 
+ 
+# DOCXDataExtractor class
+class DOCXDataExtractor(DataExtractor):
+    def extract_text(self):
+        text = ""
+        doc = docx.Document(self.file_loader.file_path)
+        for para in doc.paragraphs:
+            text += para.text + "\n"
+        return text.strip()
+ 
+    def extract_tables(self):
+        tables = []
+        doc = docx.Document(self.file_loader.file_path)
+        for table in doc.tables:
+            table_data = []
+            for row in table.rows:
+                row_data = [cell.text for cell in row.cells]
+                table_data.append(row_data)
+            tables.append(table_data)
+        return tables
+ 
+    def extract_images(self):
+        images = []
+        doc = docx.Document(self.file_loader.file_path)
+        for rel in doc.part.rels.values():
+            if "image" in rel.target_ref:
+                img_data = rel.target_part.blob
+                img_path = self.save_image(img_data, len(images) + 1, '.docx')
+                images.append(img_path)
+        return images
+ 
+    def extract_metadata(self):
+        doc = docx.Document(self.file_loader.file_path)
+        return doc.core_properties
+ 
+    def extract_links(self):
+        links = []
+        doc = docx.Document(self.file_loader.file_path)
+        for rel in doc.part.rels.values():
+            if "hyperlink" in rel.reltype:
+                links.append(rel.target_ref)
+        return links
+ 
+ 
+# PPTDataExtractor class
+class PPTDataExtractor(DataExtractor):
+    def extract_text(self):
+        text = ""
+        prs = Presentation(self.file_loader.file_path)
+        for slide in prs.slides:
+            for shape in slide.shapes:
+                if hasattr(shape, "text"):
+                    text += shape.text + "\n"
+        return text.strip()
+ 
+    def extract_tables(self):
+        # Assuming tables are stored in shapes
+        tables = []
+        # You can add table extraction logic here for PPT
+        return tables
+ 
+    def extract_images(self):
+        images = []
+        prs = Presentation(self.file_loader.file_path)
+        for slide_number, slide in enumerate(prs.slides):
+            for shape_index, shape in enumerate(slide.shapes):
+                if shape.shape_type == 13:  # Check if the shape is a picture
+                    img_data = shape.image.blob
+                    img_path = self.save_image(img_data, shape_index + 1, '.pptx', slide_number)
+                    images.append(img_path)
+        return images
+ 
+    def extract_metadata(self):
+        prs = Presentation(self.file_loader.file_path)
+        return prs.core_properties
+ 
+    def extract_links(self):
+        links = set()  # Use a set to store unique links
+        prs = Presentation(self.file_loader.file_path)
+        for slide in prs.slides:
+            for shape in slide.shapes:
+                if shape.has_text_frame:
+                    for paragraph in shape.text_frame.paragraphs:
+                        for run in paragraph.runs:
+                            if run.hyperlink:
+                                links.add(run.hyperlink.address)
+        return list(links)
+ 

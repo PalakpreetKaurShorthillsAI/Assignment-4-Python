@@ -1,93 +1,170 @@
-# storage/sql_storage.py
 import mysql.connector
-from storage.storage import Storage
-
-class SQLStorage(Storage):
-    def __init__(self, extractor):
-        self.extractor = extractor
-        # MySQL connection details
-        self.conn = mysql.connector.connect(
-            host='localhost',
-            user='root',
-            password='Palak030102',
-            database='extracted_data_db'
-        )
-        self.cursor = self.conn.cursor()
-
-    def store_data(self):
-        # Initialize text_data at the beginning
-        text_data = self.extractor.extract_text()
-
-        # Debugging output for extracted text data
-        print(f"Extracted text data: {text_data}")
-
-        # Check if text_data is None or empty
-        if text_data is None:
-            print("No text data extracted.")
+from mysql.connector import Error
+import os
+ 
+class SQLStorage:
+    def __init__(self, db_config):
+        """Initialize the SQLStorage class with database configuration and create connection."""
+        self.db_config = db_config
+        self.connection = None
+        self.create_connection()  # Ensure connection is established when the class is instantiated
+ 
+    def create_connection(self):
+        """Create a database connection."""
+        try:
+            connection = mysql.connector.connect(
+                user=self.db_config['user'],
+                password=self.db_config['password'],
+                host=self.db_config['host'],
+                database=self.db_config['database']
+            )
+            if connection.is_connected():
+                self.connection = connection
+                print("Connection to MySQL established")
+        except mysql.connector.Error as e:
+            print(f"Error connecting to MySQL: {e}")
+            self.connection = None
+ 
+    def create_tables(self):
+        """Create tables for storing extracted data."""
+        if self.connection is None:
+            print("No database connection. Cannot create tables.")
             return
-
-        # Handle text_data based on its type
-        if isinstance(text_data, dict):
-            print(f"Keys in text_data: {text_data.keys()}")  # Show keys in dictionary
-            text_content = text_data.get('text', '')  # Adjust the key to match actual data
-        else:
-            text_content = str(text_data)  # Ensure it's a string
-
-        # Debugging output for final text content
-        print(f"Final text content to be stored: {text_content}")
-
-        # Insert into the database
-        self.cursor.execute("INSERT INTO extracted_texts (content) VALUES (%s)", (text_content,))
-        self.conn.commit()
-
-        
-        
-        
-        tables = self.extractor.extract_tables()
-        images = self.extractor.extract_images()
-
-
-        print(f"Text to be stored: {text_content}")  # Ensure it's a string
-        # Create tables if they don't exist and insert the extracted text
-        # self.cursor.execute("""
-        #     CREATE TABLE IF NOT EXISTS TextData (
-        #         id INT AUTO_INCREMENT PRIMARY KEY,
-        #         content TEXT
-        #     )
-        # """)
-        
-
-        # Similarly, create tables for tables and images and insert the data
-        # Store tables
-        self.cursor.execute("""
-            CREATE TABLE IF NOT EXISTS TableData (
+ 
+        create_statements = [
+            """
+            CREATE TABLE IF NOT EXISTS extracted_files (
                 id INT AUTO_INCREMENT PRIMARY KEY,
-                table_content TEXT
+                file_name VARCHAR(255) NOT NULL,
+                file_type VARCHAR(50),
+                extracted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
-        """)
-        for table in tables:
-            self.cursor.execute("INSERT INTO TableData (table_content) VALUES (%s)", (str(table),))
-        self.conn.commit()
-
-        # Store images (assuming they are in binary format)
-        self.cursor.execute("""
-            CREATE TABLE IF NOT EXISTS ImageData (
+            """,
+            """
+            CREATE TABLE IF NOT EXISTS extracted_texts (
                 id INT AUTO_INCREMENT PRIMARY KEY,
-                image_data BLOB
+                file_id INT,
+                text LONGTEXT,
+                FOREIGN KEY (file_id) REFERENCES extracted_files(id)
             )
-        """)
-        for img_data in images:
-            self.cursor.execute("INSERT INTO ImageData (image_data) VALUES (%s)", (img_data,))
-        self.conn.commit()
-    
-
-    def close(self):
-        if hasattr(self, 'cursor') and self.cursor:
-            self.cursor.close()
-        if hasattr(self, 'connection') and self.connection:
+            """,
+            """
+            CREATE TABLE IF NOT EXISTS extracted_tables (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                file_id INT,
+                table_data LONGTEXT,
+                FOREIGN KEY (file_id) REFERENCES extracted_files(id)
+            )
+            """,
+            """
+            CREATE TABLE IF NOT EXISTS extracted_images (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                file_id INT,
+                image_path VARCHAR(255),
+                FOREIGN KEY (file_id) REFERENCES extracted_files(id)
+            )
+            """,
+            """
+            CREATE TABLE IF NOT EXISTS extracted_metadata (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                file_id INT,
+                metadata_key VARCHAR(255),
+                metadata_value TEXT,
+                FOREIGN KEY (file_id) REFERENCES extracted_files(id)
+            )
+            """,
+            """
+            CREATE TABLE IF NOT EXISTS extracted_links (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                file_id INT,
+                link VARCHAR(255),
+                FOREIGN KEY (file_id) REFERENCES extracted_files(id)
+            )
+            """
+        ]
+ 
+        cursor = self.connection.cursor()
+        try:
+            for statement in create_statements:
+                cursor.execute(statement)
+            self.connection.commit()
+            print("Tables created successfully.")
+        except Error as e:
+            print(f"Error creating tables: {e}")
+        finally:
+            cursor.close()
+ 
+    def store_data(self, extractor):
+        """Store extracted data into the database."""
+        if self.connection is None:
+            print("No database connection. Cannot store data.")
+            return
+ 
+        file_name = extractor.get_file_name()
+        file_type = extractor.__class__.__name__
+ 
+        cursor = self.connection.cursor()
+        try:
+            cursor.execute(
+                "INSERT INTO extracted_files (file_name, file_type) VALUES (%s, %s)",
+                (file_name, file_type)
+            )
+            file_id = cursor.lastrowid  # Get the id of the inserted file
+ 
+            # Store extracted text
+            text = extractor.extract_text()
+            if text:
+                cursor.execute(
+                    "INSERT INTO extracted_texts (file_id, text) VALUES (%s, %s)",
+                    (file_id, text)
+                )
+ 
+            # Store tables
+            tables = extractor.extract_tables()
+            for table in tables:
+                table_data = '\n'.join([','.join(row) for row in table])
+                cursor.execute(
+                    "INSERT INTO extracted_tables (file_id, table_data) VALUES (%s, %s)",
+                    (file_id, table_data)
+                )
+ 
+            # Store images
+            images = extractor.extract_images()
+            for image_path in images:
+                cursor.execute(
+                    "INSERT INTO extracted_images (file_id, image_path) VALUES (%s, %s)",
+                    (file_id, image_path)
+                )
+ 
+            # Store metadata
+            metadata = extractor.extract_metadata()
+            if isinstance(metadata, dict):
+                for key, value in metadata.items():
+                    if value:
+                        cursor.execute(
+                            "INSERT INTO extracted_metadata (file_id, metadata_key, metadata_value) VALUES (%s, %s, %s)",
+                            (file_id, key, value)
+                        )
+ 
+            # Store links
+            links = extractor.extract_links()
+            for link in links:
+                cursor.execute(
+                    "INSERT INTO extracted_links (file_id, link) VALUES (%s, %s)",
+                    (file_id, link)
+                )
+ 
+            self.connection.commit()
+            print("Data stored successfully.")
+ 
+        except Error as e:
+            print(f"Error storing data: {e}")
+            self.connection.rollback()  # Rollback in case of error
+        finally:
+            cursor.close()
+ 
+    def close_connection(self):
+        """Close the database connection."""
+        if self.connection and self.connection.is_connected():
             self.connection.close()
-
-    def __del__(self):
-        if self.conn:
-            self.cursor.close()
-            self.conn.close()
+            print("Database connection closed.")
