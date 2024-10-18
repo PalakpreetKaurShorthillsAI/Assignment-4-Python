@@ -22,37 +22,35 @@ This project provides a Python solution to extract text, hyperlinks, images, and
 
 ## Project Structure 
 ```
-├── loaders
-│   ├── file_loader.py       # Abstract base class for file loaders
-│   ├── pdf_loader.py        # PDF loader implementation
-│   └── docx_loader.py       # DOCX loader implementation
-│   └── pptx_loader.py       # PPTX loader implementation
-├── extractors
-│   └── data_extract.py      # Data extraction logic for text, images, URLs, and tables
-├── storage
-│   └── file_storage.py      # Handles saving extracted data to files
-├── tests
-│   └── test_extractor.py    # Unit tests for the extractors
-├── requirements.txt         # Dependencies
-└── README.md                # Project documentation
-|-- test_files/              # Test files (PDF, DOCX, PPTX) used for manual and unit testing
-    |-- pdf/
-    |-- docx/
-    |-- pptx/
-
+Python-Assignment/
+├── file_loader/
+│   ├── file_loader.py         # Abstract class for file loading
+│   ├── pdf_loader.py          # Class for loading and processing PDF files
+│   ├── docx_loader.py         # Class for loading and processing DOCX files
+│   └── ppt_loader.py          # Class for loading and processing PPT files
+├── data_extractor/
+│   └── data_extractor.py      # Class for extracting text, images, tables, and links
+├── storage/
+│   ├── file_storage.py        # Class for saving data to files (text, images, tables)
+│   ├── sql_storage.py         # Class for storing data in an SQL database
+│   └── storage.py             # Abstract class for storage handling
+├── tests/                     # Directory containing test files (PDF, DOCX, PPT) for testing
+├── output/                    # Directory where extracted files will be stored
+├── main.py                    # Script for running the tests and extraction
+└── README.md                  # Project documentation (this file)
 ```
 
 ## Installation
 - Clone the repo:
 ```
-git clone  https://github.com/PalakpreetKaurShorthillsAI/Assignment-4-Python.git
+git clone  https://github.com/PalakpreetKaurShorthillsAI/Assignment-Python.git
 
-cd Assignment-4-Python.git
+cd Assignment-Python.git
 ```
 - Set up a Python virtual environment and install dependencies:
 ```
 python -m venv env
-source env/bin/activate   # On Windows use `env\Scripts\activate`
+source env/bin/activate   
 pip install -r requirements.txt
 ```
 - Set up your MySQL database and create a .env file for MySQL credentials:
@@ -70,9 +68,10 @@ python3 main.py
 - The extracted data will be saved in the output/ folder and organized into subfolders based on file type (PDF, DOCX, PPTX). Additionally, data will be stored in the MySQL database if configured correctly.
 ## Manual Testing
 Test cases have been manually prepared and provided in the Excel file and can be tested with different file types and scenarios:
-- PDF: Small, large, corrupted PDFs.
-- DOCX: Small, large, corrupted DOCX files.
-- PPTX: Small, large, corrupted PPTX files.
+- PDF - Loader, Text Extraction, Link Extraction, Table Extraction, Metadata Extraction, Storage
+- DOCX: Loader, Text Extraction, Link Extraction, Table Extraction, Metadata Extraction, Storage
+- PPTX: Loader, Text Extraction, Link Extraction, Table Extraction, Metadata Extraction, Storage
+  
 ## Unit Testing
 Unit tests are planned to cover the following aspects:
 - File validation and loading
@@ -83,7 +82,4 @@ Unit tests are planned to cover the following aspects:
 - MySQL data storage
 
   
-To run unit tests: python3 -m unittest tests/test_extractor.py
-```
-pytest tests/test_extractor.py
-```
+
