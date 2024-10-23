@@ -13,3 +13,6 @@ class FileLoader(ABC):
     def validate_file(self):
         """Validate if the file is of correct type."""
         pass
+
+
+

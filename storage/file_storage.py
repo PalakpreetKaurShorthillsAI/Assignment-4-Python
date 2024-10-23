@@ -1,9 +1,7 @@
 import os
 import csv
-from data_extractor import PDFDataExtractor, DOCXDataExtractor, PPTDataExtractor
-from file_loader.pdf_loader import PDFLoader
-from file_loader.docx_loader import DOCXLoader
-from file_loader.ppt_loader import PPTLoader
+from data_extractor.data_extractor import UniversalDataExtractor
+from file_loader.concrete_file_loader import Loader  # Import the common Loader class
 from PIL import Image
 import io
 from tabulate import tabulate  # Importing tabulate for pretty table display

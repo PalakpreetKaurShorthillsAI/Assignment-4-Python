@@ -3,18 +3,18 @@ blob: b'<?xml version=\'1.0\' encoding=\'UTF-8\' standalone=\'yes\'?>\n<cp:coreP
 content_type: application/vnd.openxmlformats-package.core-properties+xml
 created: 2024-10-14 06:17:17
 default: <bound method CorePropertiesPart.default of <class 'pptx.parts.coreprops.CorePropertiesPart'>>
-drop_rel: <bound method XmlPart.drop_rel of <pptx.parts.coreprops.CorePropertiesPart object at 0x769216b6f850>>
+drop_rel: <bound method XmlPart.drop_rel of <pptx.parts.coreprops.CorePropertiesPart object at 0x7b14b0b5afb0>>
 language: en-IN
 last_modified_by: -
 load: <bound method XmlPart.load of <class 'pptx.parts.coreprops.CorePropertiesPart'>>
-load_rels_from_xml: <bound method Part.load_rels_from_xml of <pptx.parts.coreprops.CorePropertiesPart object at 0x769216b6f850>>
+load_rels_from_xml: <bound method Part.load_rels_from_xml of <pptx.parts.coreprops.CorePropertiesPart object at 0x7b14b0b5afb0>>
 modified: 2024-10-14 06:20:29
-package: <pptx.package.Package object at 0x769216ba0f70>
-part: <pptx.parts.coreprops.CorePropertiesPart object at 0x769216b6f850>
-part_related_by: <bound method _RelatableMixin.part_related_by of <pptx.parts.coreprops.CorePropertiesPart object at 0x769216b6f850>>
+package: <pptx.package.Package object at 0x7b14b0b242b0>
+part: <pptx.parts.coreprops.CorePropertiesPart object at 0x7b14b0b5afb0>
+part_related_by: <bound method _RelatableMixin.part_related_by of <pptx.parts.coreprops.CorePropertiesPart object at 0x7b14b0b5afb0>>
 partname: /docProps/core.xml
-relate_to: <bound method _RelatableMixin.relate_to of <pptx.parts.coreprops.CorePropertiesPart object at 0x769216b6f850>>
-related_part: <bound method _RelatableMixin.related_part of <pptx.parts.coreprops.CorePropertiesPart object at 0x769216b6f850>>
+relate_to: <bound method _RelatableMixin.relate_to of <pptx.parts.coreprops.CorePropertiesPart object at 0x7b14b0b5afb0>>
+related_part: <bound method _RelatableMixin.related_part of <pptx.parts.coreprops.CorePropertiesPart object at 0x7b14b0b5afb0>>
 revision: 14
-target_ref: <bound method _RelatableMixin.target_ref of <pptx.parts.coreprops.CorePropertiesPart object at 0x769216b6f850>>
+target_ref: <bound method _RelatableMixin.target_ref of <pptx.parts.coreprops.CorePropertiesPart object at 0x7b14b0b5afb0>>
 title: PowerPoint Presentation
