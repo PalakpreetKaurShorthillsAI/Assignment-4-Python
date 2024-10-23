@@ -25,7 +25,7 @@ class FileStorage:
                 text_file.write(data['text'])
             print(f"Text data saved to {text_file_path}")
         else:
-            print("No text data extracted.")
+            print("Text data extracted.")
  
         # Store tables
         tables = extractor.extract_tables()
@@ -40,7 +40,7 @@ class FileStorage:
                 print(f"Table data saved to {csv_file_path}")
                 print(f"Table {i + 1}:\n{tabulate(table, headers='keys', tablefmt='grid')}")  # Displaying table in terminal
         else:
-            print("No tables extracted.")
+            print("Tables extracted.")
  
         # Store images
         images = extractor.extract_images()

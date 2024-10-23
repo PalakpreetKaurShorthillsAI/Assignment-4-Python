@@ -25,8 +25,8 @@ This project provides a Python solution to extract text, hyperlinks, images, and
 ```
 Python-Assignment/
 ├── file_loader/
-│   ├── abstract_loader.py          # Abstract class for file loading
-│   ├── concrete_loader.py          # Class for loading and processing files
+│   ├── abstract_file_loader.py          # Abstract class for file loading
+│   ├── concrete_file_loader.py          # Class for loading and processing files
 │
 ├── data_extractor/
 │   └── data_extractor.py      # Class for extracting text, images, tables, and links
