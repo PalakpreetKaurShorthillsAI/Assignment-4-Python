@@ -17,17 +17,17 @@ This project provides a Python solution to extract text, hyperlinks, images, and
 <li>python-pptx: For handling PPTX files.</li>
 <li>OpenCV: Required for Camelot table extraction.</li>
 <li>Ghostscript: Required for PDF handling in Camelot.</li>
-<li>Pandas: Used for managing table data.</li> </ul>
+<li>Pandas: Used for managing table data.</li> 
+</ul>
 
 
 ## Project Structure 
 ```
 Python-Assignment/
 ├── file_loader/
-│   ├── file_loader.py         # Abstract class for file loading
-│   ├── pdf_loader.py          # Class for loading and processing PDF files
-│   ├── docx_loader.py         # Class for loading and processing DOCX files
-│   └── ppt_loader.py          # Class for loading and processing PPT files
+│   ├── abstract_loader.py          # Abstract class for file loading
+│   ├── concrete_loader.py          # Class for loading and processing files
+│
 ├── data_extractor/
 │   └── data_extractor.py      # Class for extracting text, images, tables, and links
 ├── storage/
